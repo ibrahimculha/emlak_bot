@@ -18,7 +18,7 @@ def send_telegram_message(text):
         "text": text
     }
     response = requests.post(url, data=data)
-    print(response.json())  # Yanıtı görebilirsiniz
+    print("API yanıtı:", response.json())  # Bu satırla yanıtı görebilirsinizsponse.json())  # Yanıtı görebilirsiniz
 
 def load_previous_list():
     if os.path.exists(KAYIT_DOSYASI):
