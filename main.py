@@ -17,7 +17,8 @@ def send_telegram_message(text):
         "chat_id": CHAT_ID,
         "text": text
     }
-    requests.post(url, data=data)
+    response = requests.post(url, data=data)
+    print(response.json())  # Yanıtı görebilirsiniz
 
 def load_previous_list():
     if os.path.exists(KAYIT_DOSYASI):
