@@ -30,7 +30,7 @@ def save_current_list(ilanlar):
         json.dump(ilanlar, f)
 
 def fetch_listings():
-    url = "https://www.sahibinden.com/samsun-kiralik-daire"  # Örnek link, kendi kriterlerinize göre değiştirin
+    url = "https://www.sahibinden.com/kiralik/samsun"  # Örnek link, kendi kriterlerinize göre değiştirin
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
