@@ -70,11 +70,3 @@ def main():
     else:
         print("Yeni ilan yok.")
 
-if __name__ == "__main__":
-    while True:
-        try:
-            main()
-        except Exception as e:
-            print(f"Hata oluştu: {e}")
-        # Her 1 saat (3600 saniye) bekle
-        time.sleep(3600)
