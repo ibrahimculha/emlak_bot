@@ -5,7 +5,7 @@ import json
 TOKEN = "8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM"
 CHAT_ID = "6680927334"
 
-bot = Bot(token=TOKEN)
+bot = Bot(token="8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM")
 
 try:
     with open("db.json", "r") as f:
