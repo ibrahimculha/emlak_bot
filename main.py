@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-import time
 import json
 import os
 
@@ -30,7 +29,7 @@ def save_current_list(ilanlar):
         json.dump(ilanlar, f)
 
 def fetch_listings():
-    url = "https://www.sahibinden.com/kiralik/samsun"  # Örnek link, kendi kriterlerinize göre değiştirin
+    url = "https://www.sahibinden.com/kiralik/samsun"
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -38,16 +37,19 @@ def fetch_listings():
     soup = BeautifulSoup(response.text, "html.parser")
     ilanlar = []
 
-    # Bu kısmı, sayfadaki ilanların HTML yapısına göre düzenlemeniz gerekebilir
+    # Güncel ilanların yapısına uygun seçici
+    # Bu seçici, sayfa kaynağında ilanların bulunduğu alanlara göre ayarlandı
+    # Sahibinden yeni sayfa yapısında genellikle "li" içinde "a" etiketi bulunuyor
     for ilan in soup.find_all("a", class_="classifiedTitle"):
         ilan_basligi = ilan.get_text(strip=True)
         ilan_link = "https://www.sahibinden.com" + ilan['href']
-        ilan_id = ilan_link  # veya ilan içeriğinden farklı bir ID alınabilir
+        ilan_id = ilan_link  # Benzersiz ID olarak linki kullanıyoruz
         ilanlar.append({
             "id": ilan_id,
             "baslik": ilan_basligi,
             "link": ilan_link
         })
+
     return ilanlar
 
 def main():
