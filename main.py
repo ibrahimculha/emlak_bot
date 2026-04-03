@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import os
+import time
 
 # Telegram Bot Token ve Chat ID
 TOKEN = "8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM"
@@ -38,8 +39,6 @@ def fetch_listings():
     ilanlar = []
 
     # Güncel ilanların yapısına uygun seçici
-    # Bu seçici, sayfa kaynağında ilanların bulunduğu alanlara göre ayarlandı
-    # Sahibinden yeni sayfa yapısında genellikle "li" içinde "a" etiketi bulunuyor
     for ilan in soup.find_all("a", class_="classifiedTitle"):
         ilan_basligi = ilan.get_text(strip=True)
         ilan_link = "https://www.sahibinden.com" + ilan['href']
@@ -71,4 +70,10 @@ def main():
         print("Yeni ilan yok.")
 
 if __name__ == "__main__":
-    main()
+    while True:
+        try:
+            main()
+        except Exception as e:
+            print(f"Hata oluştu: {e}")
+        # Her 1 saat (3600 saniye) bekle
+        time.sleep(3600)
