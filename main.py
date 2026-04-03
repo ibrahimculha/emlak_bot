@@ -1,12 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from telegram import Bot
 
 TOKEN = "8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM"
 CHAT_ID = "6680927334"
 
-bot = Bot(token=)
+bot = Bot(token=TOKEN)
 
 try:
     with open("db.json", "r") as f:
@@ -58,4 +57,12 @@ def gonder(ilanlar):
 if __name__ == "__main__":
     ilanlar = ilan_cek()
     gonder(ilanlar)
+
+def send_telegram(msg):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    data = {
+        "chat_id": CHAT_ID,
+        "text": msg
+    }
+    requests.post(url, data=data)
 
