@@ -57,3 +57,27 @@ def gonder(ilanlar):
 if __name__ == "__main__":
     ilanlar = ilan_cek()
     gonder(ilanlar)
+def get_updates():
+    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+    response = requests.get(url)
+    return response.json()
+
+def send_message(chat_id, text):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": text
+    }
+    requests.post(url, data=data)
+
+# Güncellemeleri al ve işle
+updates = get_updates()
+
+for update in updates["result"]:
+    message = update.get("message")
+    if message:
+        chat_id = message["chat"]["id"]
+        text = message.get("text", "")
+        print(f"Received message from {chat_id}: {text}")
+        # Burada mesajlara cevap veya işlem yapabilirsiniz
+        send_message(chat_id, "Mesajınız alındı!")
