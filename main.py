@@ -1,83 +1,72 @@
 import requests
 from bs4 import BeautifulSoup
+import time
 import json
-from telegram import Bot
+import os
 
+# Telegram Bot Token ve Chat ID
 TOKEN = "8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM"
 CHAT_ID = "6680927334"
 
-bot = Bot(token=TOKEN)
+# Kaydedilecek ilanların ID veya detayları
+KAYIT_DOSYASI = "ilanlar.json"
 
-try:
-    with open("db.json", "r") as f:
-        seen = json.load(f)
-except:
-    seen = []
-
-def ilan_cek():
-    url = "https://www.sahibinden.com/samsun-kiralik-daire"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    
-    r = requests.get(url, headers=headers)
-    soup = BeautifulSoup(r.text, "html.parser")
-
-    ilanlar = soup.select(".searchResultsItem")
-    liste = []
-
-    for ilan in ilanlar:
-        try:
-            baslik = ilan.select_one(".classifiedTitle").text.strip()
-            fiyat = ilan.select_one(".classifiedPrice").text.strip()
-            link = "https://www.sahibinden.com" + ilan.select_one("a")["href"]
-
-            fiyat_int = int(fiyat.replace("TL","").replace(".","").strip())
-
-            if fiyat_int <= 15000 and ("1+1" in baslik or "2+1" in baslik):
-                liste.append((baslik, fiyat, link))
-        except:
-            continue
-
-    return liste
-
-def gonder(ilanlar):
-    global seen
-
-    for b, f, l in ilanlar:
-        if l in seen:
-            continue
-
-        mesaj = f"{b}\n💰 {f}\n{l}"
-        bot.send_message(chat_id=CHAT_ID, text=mesaj)
-
-        seen.append(l)
-
-    with open("db.json", "w") as f:
-        json.dump(seen, f)
-
-if __name__ == "__main__":
-    ilanlar = ilan_cek()
-    gonder(ilanlar)
-def get_updates():
-    url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
-    response = requests.get(url)
-    return response.json()
-
-def send_message(chat_id, text):
+def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     data = {
-        "chat_id": chat_id,
+        "chat_id": CHAT_ID,
         "text": text
     }
     requests.post(url, data=data)
 
-# Güncellemeleri al ve işle
-updates = get_updates()
+def load_previous_list():
+    if os.path.exists(KAYIT_DOSYASI):
+        with open(KAYIT_DOSYASI, "r") as f:
+            return json.load(f)
+    return []
 
-for update in updates["result"]:
-    message = update.get("message")
-    if message:
-        chat_id = message["chat"]["id"]
-        text = message.get("text", "")
-        print(f"Received message from {chat_id}: {text}")
-        # Burada mesajlara cevap veya işlem yapabilirsiniz
-        send_message(chat_id, "Mesajınız alındı!")
+def save_current_list(ilanlar):
+    with open(KAYIT_DOSYASI, "w") as f:
+        json.dump(ilanlar, f)
+
+def fetch_listings():
+    url = "https://www.sahibinden.com/samsun-kiralik-daire"  # Örnek link, kendi kriterlerinize göre değiştirin
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+    ilanlar = []
+
+    # Bu kısmı, sayfadaki ilanların HTML yapısına göre düzenlemeniz gerekebilir
+    for ilan in soup.find_all("a", class_="classifiedTitle"):
+        ilan_basligi = ilan.get_text(strip=True)
+        ilan_link = "https://www.sahibinden.com" + ilan['href']
+        ilan_id = ilan_link  # veya ilan içeriğinden farklı bir ID alınabilir
+        ilanlar.append({
+            "id": ilan_id,
+            "baslik": ilan_basligi,
+            "link": ilan_link
+        })
+    return ilanlar
+
+def main():
+    eski_ilanlar = load_previous_list()
+    eski_ids = [ilan["id"] for ilan in eski_ilanlar]
+
+    yeni_ilanlar = fetch_listings()
+
+    # Yeni ilanları bul
+    fark = [ilan for ilan in yeni_ilanlar if ilan["id"] not in eski_ids]
+
+    if fark:
+        for ilan in fark:
+            mesaj = f"Yeni ilan!\n{ilan['baslik']}\n{ilan['link']}"
+            send_telegram_message(mesaj)
+        # Güncel listeyi kaydet
+        save_current_list(yeni_ilanlar)
+    else:
+        print("Yeni ilan yok.")
+
+if __name__ == "__main__":
+    main()
