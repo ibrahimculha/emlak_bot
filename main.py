@@ -2,71 +2,86 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import os
-import time
 
-# Telegram Bot Token ve Chat ID
-TOKEN = "8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM"
-CHAT_ID = "6680927334"
+# ENV (Railway Variables kısmına bunları ekle)
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-# Kaydedilecek ilanların ID veya detayları
-KAYIT_DOSYASI = "ilanlar.json"
+DB_FILE = "db.json"
 
-def send_telegram_message(text):
+# Kayıtlı ilanlar
+try:
+    with open(DB_FILE, "r") as f:
+        seen = json.load(f)
+except:
+    seen = []
+
+def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     data = {
         "chat_id": CHAT_ID,
-        "text": text
+        "text": msg
     }
-    response = requests.post(url, data=data)
-    print("API yanıtı:", response.json())  # Bu satırla yanıtı görebilirsinizsponse.json())  # Yanıtı görebilirsiniz
+    requests.post(url, data=data)
 
-def load_previous_list():
-    if os.path.exists(KAYIT_DOSYASI):
-        with open(KAYIT_DOSYASI, "r") as f:
-            return json.load(f)
-    return []
+# ✅ HEPSIEMLAK (çalışma ihtimali yüksek)
+def hepsiemlak():
+    url = "https://www.hepsiemlak.com/samsun-kiralik"
+    headers = {"User-Agent": "Mozilla/5.0"}
 
-def save_current_list(ilanlar):
-    with open(KAYIT_DOSYASI, "w") as f:
-        json.dump(ilanlar, f)
+    r = requests.get(url, headers=headers)
+    soup = BeautifulSoup(r.text, "html.parser")
 
-def fetch_listings():
-    url = "https://www.sahibinden.com/kiralik/samsun"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, "html.parser")
-    ilanlar = []
+    ilanlar = soup.select(".list-view-item")
 
-    # Güncel ilanların yapısına uygun seçici
-    for ilan in soup.find_all("a", class_="classifiedTitle"):
-        ilan_basligi = ilan.get_text(strip=True)
-        ilan_link = "https://www.sahibinden.com" + ilan['href']
-        ilan_id = ilan_link  # Benzersiz ID olarak linki kullanıyoruz
-        ilanlar.append({
-            "id": ilan_id,
-            "baslik": ilan_basligi,
-            "link": ilan_link
-        })
+    print("Hepsiemlak ilan sayısı:", len(ilanlar))
 
-    return ilanlar
+    liste = []
+
+    for ilan in ilanlar:
+        try:
+            baslik = ilan.select_one(".list-view-title").text.strip()
+            fiyat = ilan.select_one(".list-view-price").text.strip()
+            link = "https://www.hepsiemlak.com" + ilan.select_one("a")["href"]
+
+            liste.append((baslik, fiyat, link))
+        except:
+            continue
+
+    return liste
+
+def gonder(ilanlar):
+    global seen
+
+    for b, f, l in ilanlar:
+        if l in seen:
+            continue
+
+        mesaj = f"{b}\n💰 {f}\n{l}"
+        print("GÖNDERİLİYOR:", mesaj)
+
+        send_telegram(mesaj)
+        seen.append(l)
+
+    with open(DB_FILE, "w") as f:
+        json.dump(seen, f)
 
 def main():
-    eski_ilanlar = load_previous_list()
-    eski_ids = [ilan["id"] for ilan in eski_ilanlar]
+    print("BOT BAŞLADI")
 
-    yeni_ilanlar = fetch_listings()
+    ilanlar = []
+    ilanlar += hepsiemlak()
 
-    # Yeni ilanları bul
-    fark = [ilan for ilan in yeni_ilanlar if ilan["id"] not in eski_ids]
+    print("Toplam ilan:", len(ilanlar))
 
-    if fark:
-        for ilan in fark:
-            mesaj = f"Yeni ilan!\n{ilan['baslik']}\n{ilan['link']}"
-            send_telegram_message(mesaj)
-        # Güncel listeyi kaydet
-        save_current_list(yeni_ilanlar)
-    else:
-        print("Yeni ilan yok.")
+    if not ilanlar:
+        print("İlan bulunamadı")
+        return
 
+    gonder(ilanlar)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print("HATA:", e)
