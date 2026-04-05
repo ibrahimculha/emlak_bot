@@ -2,8 +2,8 @@ import requests
 import json
 import os
 
-TOKEN = os.getenv("TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+TOKEN = os.getenv("8761053450:AAEtCKoJdW5bgv5U7mVtKR_MdYzmcWaD-nM")
+CHAT_ID = os.getenv("6680927334")
 
 DB_FILE = "db.json"
 
