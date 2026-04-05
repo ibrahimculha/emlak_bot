@@ -1,15 +1,12 @@
 import requests
-from bs4 import BeautifulSoup
 import json
 import os
 
-# ENV (Railway Variables kısmına bunları ekle)
-TOKEN = os.getenv("8761053450:AAFUz-6AXgnN9jZucMOkp2JXovALUyE-etc")
-CHAT_ID = os.getenv("6680927334")
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 DB_FILE = "db.json"
 
-# Kayıtlı ilanlar
 try:
     with open(DB_FILE, "r") as f:
         seen = json.load(f)
@@ -18,37 +15,44 @@ except:
 
 def send_telegram(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    data = {
-        "chat_id": CHAT_ID,
-        "text": msg
-    }
+    data = {"chat_id": CHAT_ID, "text": msg}
     requests.post(url, data=data)
 
-# ✅ HEPSIEMLAK (çalışma ihtimali yüksek)
-def hepsiemlak():
-    url = "https://www.hepsiemlak.com/samsun-kiralik"
-    headers = {"User-Agent": "Mozilla/5.0"}
+# 🔥 API ÜZERİNDEN İLAN ÇEKME (ÇALIŞIR)
+def ilan_cek():
+    url = "https://search.hepsiemlak.com/realty/search"
+    
+    params = {
+        "category": "kiralik",
+        "province": "Samsun"
+    }
 
-    r = requests.get(url, headers=headers)
-    soup = BeautifulSoup(r.text, "html.parser")
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+    }
 
-    ilanlar = soup.select(".list-view-item")
+    r = requests.get(url, headers=headers, params=params)
 
-    print("Hepsiemlak ilan sayısı:", len(ilanlar))
+    print("STATUS:", r.status_code)
 
-    liste = []
+    data = r.json()
 
-    for ilan in ilanlar:
+    ilanlar = []
+
+    for item in data.get("realtyList", []):
         try:
-            baslik = ilan.select_one(".list-view-title").text.strip()
-            fiyat = ilan.select_one(".list-view-price").text.strip()
-            link = "https://www.hepsiemlak.com" + ilan.select_one("a")["href"]
+            baslik = item.get("title")
+            fiyat = item.get("price")
+            link = "https://www.hepsiemlak.com" + item.get("url")
 
-            liste.append((baslik, fiyat, link))
+            ilanlar.append((baslik, fiyat, link))
         except:
             continue
 
-    return liste
+    print("ÇEKİLEN İLAN:", len(ilanlar))
+
+    return ilanlar
 
 def gonder(ilanlar):
     global seen
@@ -58,7 +62,7 @@ def gonder(ilanlar):
             continue
 
         mesaj = f"{b}\n💰 {f}\n{l}"
-        print("GÖNDERİLİYOR:", mesaj)
+        print("GÖNDERİLDİ:", mesaj)
 
         send_telegram(mesaj)
         seen.append(l)
@@ -69,10 +73,7 @@ def gonder(ilanlar):
 def main():
     print("BOT BAŞLADI")
 
-    ilanlar = []
-    ilanlar += hepsiemlak()
-
-    print("Toplam ilan:", len(ilanlar))
+    ilanlar = ilan_cek()
 
     if not ilanlar:
         print("İlan bulunamadı")
