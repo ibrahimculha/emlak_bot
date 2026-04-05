@@ -4,8 +4,8 @@ import json
 import os
 
 # ENV (Railway Variables kısmına bunları ekle)
-TOKEN = os.getenv("TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+TOKEN = os.getenv("8761053450:AAFUz-6AXgnN9jZucMOkp2JXovALUyE-etc")
+CHAT_ID = os.getenv("6680927334")
 
 DB_FILE = "db.json"
 
